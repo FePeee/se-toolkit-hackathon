@@ -53,9 +53,12 @@ async def ask_ai(prompt: str) -> str:
             messages=[{"role": "user", "content": prompt}],
             max_tokens=300,
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        if content is None or content.strip() == "":
+            return "🤖 AI couldn't generate a report right now. Don't worry — consistency beats perfection. Keep going! 💪"
+        return content
     except Exception as e:
-        return f"AI error: {str(e)}"
+        return f"🤖 AI is taking a break: {str(e)}. But you shouldn't! Keep pushing forward 💪"
 
 
 @router.message(CommandStart())
@@ -299,7 +302,20 @@ async def cmd_report(message: Message):
         f"- {h['name']}: streak {h['streak']} days, this week {h['week_completion']}, done today: {h['done_today']}"
         for h in habits
     ])
-    prompt = f"""You are an accountability coach. Analyze this person's habit data and give a short motivational weekly report.
+
+    # Fresh start fallback: when user did nothing this week, skip AI and send motivation directly
+    total_this_week = sum(int(h["week_completion"].split("/")[0]) for h in habits)
+    if total_this_week == 0:
+        report = (
+            f"🌱 *Week zero — and that's okay!*\n\n"
+            f"Everyone starts somewhere. This week was a blank slate, which means next week you can build "
+            f"something amazing. The hardest part isn't doing the habits — it's starting.\n\n"
+            f"💡 *Tip:* Pick just ONE habit from your list and commit to doing it for 5 minutes a day. "
+            f"Small wins compound into big results.\n\n"
+            f"You've already taken the first step by setting up this tracker. Now let's make it count! 🚀"
+        )
+    else:
+        prompt = f"""You are an accountability coach. Analyze this person's habit data and give a short motivational weekly report.
 
 User: {data['name']}
 Habits this week:
@@ -313,7 +329,8 @@ Write a brief report (3-5 sentences) that:
 
 Be direct, friendly, and specific. Use emojis."""
 
-    report = await ask_ai(prompt)
+        report = await ask_ai(prompt)
+
     await message.answer(f"📊 *Weekly Report for {data['name']}*\n\n{report}", parse_mode="Markdown")
 
 
@@ -530,7 +547,7 @@ async def send_report_to_user(bot: Bot, user_data: dict):
     """Send a weekly report to a single user"""
     telegram_id = user_data.get("telegram_id")
     habits = user_data.get("habits", [])
-    
+
     try:
         await bot.send_message(telegram_id, "🤖 Generating your weekly report... please wait a moment")
 
@@ -538,7 +555,20 @@ async def send_report_to_user(bot: Bot, user_data: dict):
             f"- {h['name']}: streak {h['streak']} days, this week {h['week_completion']}, done today: {h['done_today']}"
             for h in habits
         ])
-        prompt = f"""You are an accountability coach. Analyze this person's habit data and give a short motivational weekly report.
+
+        # Fresh start fallback
+        total_this_week = sum(int(h["week_completion"].split("/")[0]) for h in habits)
+        if total_this_week == 0:
+            report = (
+                f"🌱 *Week zero — and that's okay!*\n\n"
+                f"Everyone starts somewhere. This week was a blank slate, which means next week you can build "
+                f"something amazing. The hardest part isn't doing the habits — it's starting.\n\n"
+                f"💡 *Tip:* Pick just ONE habit from your list and commit to doing it for 5 minutes a day. "
+                f"Small wins compound into big results.\n\n"
+                f"You've already taken the first step by setting up this tracker. Now let's make it count! 🚀"
+            )
+        else:
+            prompt = f"""You are an accountability coach. Analyze this person's habit data and give a short motivational weekly report.
 
 User: {user_data['name']}
 Habits this week:
@@ -552,7 +582,8 @@ Write a brief report (3-5 sentences) that:
 
 Be direct, friendly, and specific. Use emojis."""
 
-        report = await ask_ai(prompt)
+            report = await ask_ai(prompt)
+
         await bot.send_message(
             telegram_id,
             f"📊 *Weekly Report for {user_data['name']}*\n\n{report}",
