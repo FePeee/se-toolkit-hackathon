@@ -14,6 +14,8 @@ class User(Base):
     telegram_id = Column(String, unique=True, nullable=True)
     link_code = Column(String, unique=True, nullable=True)
     timezone = Column(String, default="UTC")
+    report_day = Column(String, nullable=True)  # "monday", "sunday", etc.
+    report_time = Column(String, nullable=True)  # "18:00"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     habits = relationship("Habit", back_populates="owner", cascade="all, delete")

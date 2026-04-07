@@ -1,4 +1,41 @@
+# Environment & secrets
 .env
+.env.local
+.env.production
+
+# Version control
 .git
+
+# Python
 __pycache__
+*.py[cod]
+*.egg-info
+dist
+build
+*.db
+habittracker.db
+
+# Node
 node_modules
+
+# Test coverage
+coverage/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+postgres_data/
+pgadmin_data/

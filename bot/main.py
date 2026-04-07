@@ -41,6 +41,10 @@ class AddHabit(StatesGroup):
     waiting_name = State()
     waiting_time = State()
 
+class ScheduleReport(StatesGroup):
+    waiting_day = State()
+    waiting_time = State()
+
 
 async def ask_ai(prompt: str) -> str:
     try:
@@ -120,6 +124,7 @@ async def cmd_help(message: Message):
         "/list — view all your habits\n"
         "/stats — streaks and weekly progress\n"
         "/report — AI weekly accountability report\n"
+        "/schedule — set up automatic weekly report\n"
         "/delete — delete a habit\n"
         "/timezone — change your timezone\n"
         "/help — show this message",
@@ -341,6 +346,91 @@ async def callback_delete(callback: CallbackQuery):
         await callback.answer("❌ Error. Try again.")
 
 
+@router.message(Command("schedule"))
+async def cmd_schedule(message: Message, state: FSMContext):
+    telegram_id = str(message.from_user.id)
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{API_URL}/api/user-by-telegram/{telegram_id}")
+    if r.status_code != 200:
+        await message.answer("❌ Please register first by sending /start")
+        return
+
+    days = [
+        ("🟢 Monday", "monday"),
+        ("🟢 Tuesday", "tuesday"),
+        ("🟢 Wednesday", "wednesday"),
+        ("🟢 Thursday", "thursday"),
+        ("🟢 Friday", "friday"),
+        ("🟢 Saturday", "saturday"),
+        ("🟢 Sunday", "sunday"),
+    ]
+    buttons = [[InlineKeyboardButton(text=label, callback_data=f"rday:{day}")] for label, day in days]
+    await message.answer(
+        "📅 *Weekly Report Schedule*\n\n"
+        "Choose a day of the week to receive your automatic AI report:",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
+    )
+    await state.set_state(ScheduleReport.waiting_day)
+
+
+@router.callback_query(F.data.startswith("rday:"))
+async def callback_report_day(callback: CallbackQuery, state: FSMContext):
+    day = callback.data.split(":", 1)[1]
+    await state.update_data(report_day=day)
+    await state.set_state(ScheduleReport.waiting_time)
+    await callback.message.edit_text(
+        "⏰ Great! Now tell me what time you'd like to receive the report (e.g., 18:00 or 09:00):"
+    )
+
+
+@router.message(ScheduleReport.waiting_time)
+async def process_report_time(message: Message, state: FSMContext):
+    time_text = message.text.strip()
+    # Validate time format
+    try:
+        hour, minute = map(int, time_text.split(":"))
+        if not (0 <= hour <= 23 and 0 <= minute <= 59):
+            raise ValueError
+    except (ValueError, IndexError):
+        await message.answer("❌ Invalid time format. Please use HH:MM (e.g., 18:00)")
+        return
+
+    data = await state.get_data()
+    report_day = data.get("report_day")
+    telegram_id = str(message.from_user.id)
+
+    # Send to backend
+    async with httpx.AsyncClient() as client:
+        r = await client.patch(
+            f"{API_URL}/api/user-report-schedule/{telegram_id}",
+            json={"report_day": report_day, "report_time": time_text}
+        )
+
+    if r.status_code == 200:
+        day_names = {
+            "monday": "Monday",
+            "tuesday": "Tuesday",
+            "wednesday": "Wednesday",
+            "thursday": "Thursday",
+            "friday": "Friday",
+            "saturday": "Saturday",
+            "sunday": "Sunday",
+        }
+        day_name = day_names.get(report_day, report_day)
+        await message.answer(
+            f"✅ *Weekly Report Scheduled!*\n\n"
+            f"📅 Day: *{day_name}*\n"
+            f"⏰ Time: *{time_text}*\n\n"
+            f"Every week at this time, I'll send you an AI-powered habit report. 💪",
+            parse_mode="Markdown"
+        )
+    else:
+        await message.answer("❌ Error saving schedule")
+
+    await state.clear()
+
+
 async def send_reminders(bot: Bot):
     async with httpx.AsyncClient() as client:
         r = await client.get(f"{API_URL}/api/all-users-habits")
@@ -386,6 +476,92 @@ Their streaks are at risk. Write a short (2-3 sentences) friendly but firm accou
             logging.error(f"AI check error: {e}")
 
 
+async def send_weekly_reports(bot: Bot):
+    """Send AI weekly reports to users based on their schedule"""
+    # Get current day and hour
+    now_utc = datetime.now(pytz.UTC)
+    
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{API_URL}/api/users-with-report-schedule")
+    if r.status_code != 200:
+        return
+
+    users_data = r.json()
+    if not users_data:
+        return
+
+    # Day name mapping (Python weekday: 0=Monday)
+    day_mapping = {
+        0: "monday",
+        1: "tuesday",
+        2: "wednesday",
+        3: "thursday",
+        4: "friday",
+        5: "saturday",
+        6: "sunday"
+    }
+    
+    current_day_name = day_mapping[now_utc.weekday()]
+    current_hour = now_utc.hour
+
+    for user_data in users_data:
+        telegram_id = user_data.get("telegram_id")
+        habits = user_data.get("habits", [])
+        user_timezone = user_data.get("timezone", "UTC")
+        
+        if not telegram_id or not habits:
+            continue
+
+        # Check if it's the right day and time for this user
+        try:
+            tz = pytz.timezone(user_timezone)
+            now_local = datetime.now(tz)
+            user_day_name = day_mapping[now_local.weekday()]
+            user_hour, user_min = map(int, user_data.get("report_time", "00:00").split(":"))
+            
+            # Only send if it's the right day and time (within the hour window)
+            if user_day_name == current_day_name and now_local.hour == user_hour and now_local.minute < 5:
+                await send_report_to_user(bot, user_data)
+        except Exception as e:
+            logging.error(f"Error checking schedule for {telegram_id}: {e}")
+
+
+async def send_report_to_user(bot: Bot, user_data: dict):
+    """Send a weekly report to a single user"""
+    telegram_id = user_data.get("telegram_id")
+    habits = user_data.get("habits", [])
+    
+    try:
+        await bot.send_message(telegram_id, "🤖 Generating your weekly report... please wait a moment")
+
+        habits_text = "\n".join([
+            f"- {h['name']}: streak {h['streak']} days, this week {h['week_completion']}, done today: {h['done_today']}"
+            for h in habits
+        ])
+        prompt = f"""You are an accountability coach. Analyze this person's habit data and give a short motivational weekly report.
+
+User: {user_data['name']}
+Habits this week:
+{habits_text}
+
+Write a brief report (3-5 sentences) that:
+1. Highlights their strongest habit
+2. Points out which habit needs more attention
+3. Gives one specific actionable tip
+4. Ends with encouragement
+
+Be direct, friendly, and specific. Use emojis."""
+
+        report = await ask_ai(prompt)
+        await bot.send_message(
+            telegram_id,
+            f"📊 *Weekly Report for {user_data['name']}*\n\n{report}",
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logging.error(f"Weekly report error for {telegram_id}: {e}")
+
+
 async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher(storage=MemoryStorage())
@@ -394,6 +570,7 @@ async def main():
     scheduler = AsyncIOScheduler()
     scheduler.add_job(send_reminders, "cron", minute="*", args=[bot])
     scheduler.add_job(ai_accountability_check, "cron", hour=21, minute=0, args=[bot])
+    scheduler.add_job(send_weekly_reports, "cron", minute="*/5", args=[bot])  # Check every 5 minutes
     scheduler.start()
 
     await dp.start_polling(bot)

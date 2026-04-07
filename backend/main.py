@@ -144,6 +144,54 @@ def update_timezone(telegram_id: str, data: dict, db: Session = Depends(get_db))
     db.commit()
     return {"message": "Timezone updated", "timezone": user.timezone}
 
+@app.patch("/api/user-report-schedule/{telegram_id}")
+def update_report_schedule(telegram_id: str, data: dict, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.telegram_id == telegram_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.report_day = data.get("report_day", user.report_day)
+    user.report_time = data.get("report_time", user.report_time)
+    db.commit()
+    return {
+        "message": "Report schedule updated",
+        "report_day": user.report_day,
+        "report_time": user.report_time,
+    }
+
+@app.get("/api/users-with-report-schedule")
+def get_users_with_report_schedule(db: Session = Depends(get_db)):
+    users = db.query(models.User).filter(
+        models.User.telegram_id != None,
+        models.User.report_day != None,
+        models.User.report_time != None,
+    ).all()
+    result = []
+    for user in users:
+        habits = db.query(models.Habit).filter(
+            models.Habit.user_id == user.id,
+            models.Habit.is_active == True
+        ).all()
+        today = date.today()
+        week_start = today - timedelta(days=6)
+        habits_data = []
+        for h in habits:
+            done_today = any(c.date == today for c in h.completions)
+            week_done = sum(1 for c in h.completions if week_start <= c.date <= today)
+            habits_data.append({
+                "id": h.id,
+                "name": h.name,
+                "streak": calculate_streak(h),
+                "done_today": done_today,
+                "week_completion": f"{week_done}/7",
+            })
+        result.append({
+            "telegram_id": user.telegram_id,
+            "name": user.name,
+            "timezone": user.timezone,
+            "habits": habits_data,
+        })
+    return result
+
 @app.post("/api/register-telegram")
 def register_telegram(data: dict, db: Session = Depends(get_db)):
     telegram_id = data.get("telegram_id")
