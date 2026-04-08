@@ -1,4 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// For local dev without proxy: set VITE_API_URL=http://localhost:8000
+// For VM/production with same domain: leave empty or set relative path
+const BASE = import.meta.env.VITE_API_URL || "";
 
 function getToken() {
   return localStorage.getItem("token");
