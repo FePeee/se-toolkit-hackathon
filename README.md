@@ -6,8 +6,8 @@
 
 ## Demo
 
-![scren_1](screenshots/my-screenshot.png)
-![scren_2](screenshots/my-screenshot.png)
+![scren_1](screenshots/scren_1.png)
+![scren_2](screenshots/scren_2.png)
 
 ---
 
