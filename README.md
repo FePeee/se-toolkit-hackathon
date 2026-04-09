@@ -1,377 +1,268 @@
-# Habit Tracker — Daily Streaks, Telegram Reminders & AI Insights
+# Habit Tracker
 
-[![CI](https://github.com/yourusername/habit-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/habit-tracker/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+**Habit Tracker** is a web application for tracking daily habits with Telegram bot integration, AI-powered reports, and a React dashboard.
 
-A full-stack habit tracking application with Telegram bot integration, AI-powered weekly reports, and a modern React dashboard.
+---
+
+## Demo
+
+> *[Screenshot 1: Dashboard — habit list, daily stats]*
+>
+> *[Screenshot 2: Telegram bot — `/stats` command showing streaks and completion rate]*
+
+---
+
+## Product Context
+
+### End Users
+
+People who want to build positive habits or break bad ones: students, freelancers, professionals pursuing a healthier lifestyle. The product is suitable for both personal use and team collaboration (e.g., habit trackers within corporate wellness programs).
+
+### Problem
+
+Many people start forming habits (exercise, meditation, reading, early rising) but quit after a few days due to lack of feedback, reminders, and a sense of progress. Existing apps are either too complex or fail to provide personalized motivation.
+
+### Solution
+
+Habit Tracker offers a simple and motivating way to track habits via a web interface and a Telegram bot. Users get:
+
+- Automatic reminders in Telegram
+- AI-powered weekly reports with personalized recommendations
+- Streaks and statistics to visualize progress
+- The ability to log habits on the go via the bot or the web dashboard
+
+---
 
 ## Features
 
-- 🎯 **Track Daily Habits** — Add habits with optional daily reminders
-- ✅ **Quick Completion** — Mark habits as done with inline buttons (Telegram) or checkboxes (Web)
-- 📊 **Weekly Stats** — View streaks, completion rates, and progress metrics
-- 🤖 **AI Reports** — Get personalized weekly accountability reports powered by AI
-- ⏰ **Automatic Scheduling** — Choose when to receive weekly reports (day & time)
-- 🔗 **Telegram Integration** — Link your web account to Telegram for on-the-go tracking
-- 📱 **Responsive Web UI** — Modern dashboard with real-time stats
+### Implemented Features
+
+| Feature | Description |
+|---------|-------------|
+| **Registration & Auth** | Web registration with JWT authentication |
+| **Habit Creation** | Add habits with optional reminder times |
+| **Completion Tracking** | Checkboxes on the web dashboard, inline buttons in the Telegram bot |
+| **Streaks** | Automatic consecutive-day counter for each habit |
+| **Statistics** | Weekly completion rate, current streaks |
+| **Telegram Bot** | Commands: `/start`, `/add`, `/done`, `/list`, `/stats`, `/report`, `/schedule`, `/delete`, `/timezone`, `/help`, `/advise`, `/rolemodel`, `/suggest`, `/insights` |
+| **AI Reports** | Weekly personalized reports via OpenRouter (GPT) |
+| **Report Scheduling** | Choose day of week and time for automatic delivery |
+| **AI Recommendations** | `/advise` (habit advice), `/suggest` (habit suggestions), `/rolemodel` (habits for a profession) |
+| **Saved Insights** | View saved AI recommendations via `/insights` |
+| **Telegram Linking** | Connect web account to Telegram via a 6-digit code |
+| **Progress Dashboard** | "AI Progress" tab on the web dashboard |
+| **REST API** | Full set of endpoints for CRUD operations on habits, users, completions |
+
+### Planned Features
+
+| Feature | Status |
+|---------|--------|
+| Mobile app (iOS/Android) | Not implemented |
+| Browser push notifications | Not implemented |
+| Habit categories and tags | Not implemented |
+| Social features (leaderboards, friends) | Not implemented |
+| Data export (CSV, PDF) | Not implemented |
+| Dark theme | Not implemented |
+| Calendar integration (Google Calendar) | Not implemented |
+| Group habits (family, team) | Not implemented |
+| End-to-end data encryption | Not implemented |
 
 ---
 
-## Quick Start
+## Usage
 
-### 1. Clone and configure
+### For End Users
+
+1. **Open the web application** (URL of the deployed frontend).
+2. **Register** — enter your email, name, and password.
+3. **Link the Telegram bot** — copy the 6-digit code from the dashboard and send it to the bot with `/start CODE`.
+4. **Add habits** — via the "+ Add habit" button on the dashboard or the `/add` command in Telegram.
+5. **Log completions** — click the checkbox on the dashboard or use `/done` in the bot.
+6. **Receive AI reports** — manually via `/report` or set up automatic delivery via `/schedule`.
+
+### For Administrators / Developers
+
+See the "Deployment" section below.
+
+---
+
+## Deployment
+
+### Virtual Machine Requirements
+
+| Parameter | Value |
+|-----------|-------|
+| **OS** | Ubuntu 24.04 LTS |
+| **CPU** | 2 cores minimum |
+| **RAM** | 2 GB minimum (4 GB recommended) |
+| **Disk** | 20 GB free space |
+| **Network** | Open ports: 80 (HTTP), 443 (HTTPS, when using reverse proxy) |
+
+### Required Software
+
+The following must be installed on the VM:
 
 ```bash
+# Docker and Docker Compose
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2
+
+# Git
+sudo apt install -y git
+
+# (Optional) Nginx — as a reverse proxy for production
+sudo apt install -y nginx
+```
+
+Ensure Docker is running and added to your user group:
+
+```bash
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+# Re-login to your SSH session for the group change to take effect
+```
+
+### Step-by-Step Instructions
+
+#### 1. Clone the Repository
+
+```bash
+cd ~
 git clone https://github.com/yourusername/habit-tracker.git
 cd habit-tracker
+```
+
+#### 2. Create the Environment File
+
+```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set your tokens:
+Edit `.env` and set:
 
 ```env
-BOT_TOKEN=your_telegram_bot_token
-OPENROUTER_API_KEY=your_openrouter_api_key
-```
+# Telegram Bot Token — get from @BotFather in Telegram
+BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 
-### 2. Run with Docker Compose
+# OpenRouter API Key — for AI reports (https://openrouter.ai)
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxx
 
-```bash
-docker-compose up --build
-```
-
-This starts 4 services:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs (Swagger)**: http://localhost:8000/docs
-- **PostgreSQL**: Port 5432
-
-### 3. How to use
-
-1. **Register** at http://localhost:3000
-2. **Copy your 6-digit link code** shown on the dashboard
-3. **Open your Telegram bot** and send: `/start 123456`
-4. **Add habits** via `/add` in bot or on the web dashboard
-5. **Schedule AI reports** with `/schedule` in the bot
-
----
-
-## Bot Commands
-
-| Command | Description |
-|---------|-------------|
-| `/start CODE` | Link your web account to Telegram |
-| `/add` | Add a new habit with optional reminder time |
-| `/done` | Mark habits as complete today (inline buttons) |
-| `/list` | View all your habits |
-| `/stats` | View streaks and weekly completion stats |
-| `/report` | Get AI-generated weekly accountability report (manual) |
-| `/schedule` | Set up automatic weekly reports (choose day & time) |
-| `/delete` | Delete a habit |
-| `/timezone` | Change your timezone |
-| `/help` | Show all commands |
-
----
-
-## Automatic Weekly Reports
-
-Use `/schedule` in the Telegram bot to configure automatic AI-powered weekly reports:
-
-1. **Choose a day** of the week (Monday–Sunday)
-2. **Set a time** (e.g., `18:00`)
-3. **Receive personalized AI insights** every week at that time
-
-The AI report includes:
-- Your strongest habit this week
-- Habits that need more attention
-- Specific actionable tips
-- Encouragement and motivation
-
-You can still get instant reports anytime with `/report`.
-
----
-
-## Services & Ports
-
-| Service | URL / Port | Description |
-|---------|-----------|-------------|
-| **Frontend** | http://localhost:3000 | React + Vite web app |
-| **Backend API** | http://localhost:8000 | FastAPI REST API |
-| **API Docs** | http://localhost:8000/docs | Swagger UI (interactive) |
-| **PostgreSQL** | localhost:5432 | Database server |
-
----
-
-## Project Structure
-
-```
-habit-tracker/
-├── backend/                    # FastAPI + PostgreSQL
-│   ├── main.py                 # API routes & business logic
-│   ├── models.py               # SQLAlchemy ORM models
-│   ├── database.py             # DB connection (SQLite/PostgreSQL)
-│   ├── requirements.txt        # Python dependencies
-│   ├── Dockerfile
-│   ├── pytest.ini              # Test configuration
-│   ├── migrate_report_schedule.py  # Migration script
-│   └── tests/                  # Backend tests (pytest)
-│       ├── conftest.py
-│       └── test_api.py
-│
-├── bot/                        # Telegram bot (aiogram 3)
-│   ├── main.py                 # Bot handlers & scheduled jobs
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   ├── pytest.ini
-│   └── tests/                  # Bot tests (pytest)
-│       └── test_bot.py
-│
-├── frontend/                   # React 18 + Vite 5
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── client.js       # API wrapper (fetch)
-│   │   ├── pages/
-│   │   │   ├── AuthPage.jsx    # Login / Register
-│   │   │   └── Dashboard.jsx   # Main habit tracking UI
-│   │   ├── tests/              # Frontend tests (Vitest)
-│   │   │   ├── setup.js
-│   │   │   ├── api.test.js
-│   │   │   ├── AuthPage.test.jsx
-│   │   │   └── Dashboard.test.jsx
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── vitest.config.js        # Test configuration
-│   └── Dockerfile
-│
-├── .github/
-│   └── workflows/
-│       └── ci.yml              # GitHub Actions CI/CD
-│
-├── docker-compose.yml          # Multi-service orchestration
-├── .env.example                # Environment template
-└── README.md
-```
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Backend** | FastAPI 0.111, SQLAlchemy 2.0, JWT Auth, PostgreSQL/SQLite |
-| **Bot** | aiogram 3.7, APScheduler 3.10, OpenRouter AI (GPT) |
-| **Frontend** | React 18, Vite 5, Fetch API, localStorage |
-| **Database** | PostgreSQL 16 (Docker) / SQLite (local dev fallback) |
-| **Testing** | pytest (backend/bot), Vitest + Testing Library (frontend) |
-| **CI/CD** | GitHub Actions (automated testing on push/PR) |
-| **DevOps** | Docker Compose |
-
----
-
-## Testing
-
-### Backend (pytest)
-
-```bash
-cd backend
-pip install -r requirements.txt
-pytest tests/ -v --cov=. --cov-report=term-missing
-```
-
-**Coverage includes:**
-- Authentication (register, login, JWT validation)
-- Habits CRUD (create, read, delete, user isolation)
-- Completions (mark done, streak calculation, duplicate prevention)
-- Telegram integration (linking, habits via telegram_id)
-- Stats & report scheduling endpoints
-
-### Frontend (Vitest + Testing Library)
-
-```bash
-cd frontend
-pnpm install
-pnpm test           # Run once
-pnpm test:watch     # Watch mode
-pnpm test:coverage  # Coverage report
-```
-
-**Coverage includes:**
-- API client (mocked fetch, auth headers, error handling)
-- AuthPage (login/register flows, error states, form validation)
-- Dashboard (habits list, stats, completion, deletion, add form)
-
-### Bot (pytest)
-
-```bash
-cd bot
-pip install -r requirements.txt
-pytest tests/ -v
-```
-
-**Coverage includes:**
-- Handler existence and structure
-- Callback data parsing
-- Timezone validation
-- Report scheduling logic
-- Bot configuration
-
----
-
-## Continuous Integration (GitHub Actions)
-
-The project uses automated testing on every push and pull request:
-
-### Jobs:
-1. **Backend Tests** — pytest with coverage report
-2. **Frontend Tests** — Vitest with coverage report
-3. **Bot Tests** — pytest handler validation
-4. **Backend Lint** — ruff linter & import checks
-5. **Frontend Build** — Vite production build validation
-6. **Docker Build** — Full docker compose build validation
-
-### Status Badge:
-Add this to your repo after pushing:
-```markdown
-[![CI](https://github.com/YOUR_USERNAME/habit-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/habit-tracker/actions/workflows/ci.yml)
-```
-
----
-
-## Development (without Docker)
-
-### Database Setup
-
-By default, the backend uses SQLite for local development. To use PostgreSQL:
-
-```bash
-# Set environment variable
-export DATABASE_URL=postgresql://user:pass@localhost:5432/habitdb
-
-# Or edit backend/database.py directly
-```
-
-### Backend
-
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-API docs: http://localhost:8000/docs
-
-### Bot
-
-```bash
-cd bot
-pip install -r requirements.txt
-BOT_TOKEN=your_token OPENROUTER_API_KEY=your_key API_URL=http://localhost:8000 python main.py
-```
-
-### Frontend
-
-```bash
-cd frontend
-pnpm install    # or: npm install
-pnpm dev        # or: npm run dev
-```
-
----
-
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-# Telegram Bot Token (get from @BotFather)
-BOT_TOKEN=your_telegram_bot_token_here
-
-# OpenRouter API Key (for AI reports, get from https://openrouter.ai)
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-
-# (Optional) Custom database URL (defaults to PostgreSQL in docker-compose)
+# (Optional) Override database URL
 # DATABASE_URL=postgresql://habit_user:habit_pass@db:5432/habitdb
 ```
 
-See `.env.example` for a template.
+#### 3. Create a Telegram Bot
 
----
+1. Open **@BotFather** in Telegram.
+2. Send `/newbot` and follow the instructions.
+3. Copy the token into `BOT_TOKEN` in the `.env` file.
 
-## Database Migrations
+#### 4. Create an OpenRouter API Key
 
-If you're adding the scheduling feature for the first time (SQLite):
+1. Register at https://openrouter.ai
+2. Create an API key in your account dashboard.
+3. Copy the key into `OPENROUTER_API_KEY` in the `.env` file.
+
+#### 5. Start the Services
 
 ```bash
-cd backend
-python migrate_report_schedule.py
+docker compose up --build -d
 ```
 
-This adds `report_day` and `report_time` columns to the `users` table.
+This launches 5 containers:
 
-For PostgreSQL in Docker, the schema is auto-created on startup via `Base.metadata.create_all()`.
+| Service | Port | Description |
+|---------|------|-------------|
+| **db** | 5432 | PostgreSQL 16 |
+| **backend** | 8000 | FastAPI API |
+| **bot** | — | aiogram Telegram bot |
+| **frontend** | 3000 | React + Vite |
+| **pgadmin** | 5050 | pgAdmin for database management |
 
----
+#### 6. Verify the Installation
 
-## API Endpoints
+Open in your browser:
 
-### Authentication
-- `POST /api/auth/register` — Register new user
-- `POST /api/auth/login` — Login (OAuth2 password flow)
-- `GET /api/auth/me` — Get current user info (requires token)
+- **Frontend**: `http://<YOUR_VM_IP>:3000`
+- **API Docs (Swagger)**: `http://<YOUR_VM_IP>:8000/docs`
+- **pgAdmin**: `http://<YOUR_VM_IP>:5050` (login: `admin@habit.local`, password: `admin`)
 
-### Habits (Web)
-- `GET /api/habits` — List all habits
-- `POST /api/habits` — Create habit
-- `DELETE /api/habits/{id}` — Delete habit
-- `POST /api/habits/{id}/complete` — Mark as complete
+#### 7. (Optional) Configure Nginx as a Reverse Proxy
 
-### Telegram Integration
-- `POST /api/register-telegram` — Register via Telegram
-- `GET /api/user-by-telegram/{telegram_id}` — Lookup user
-- `POST /api/link-telegram` — Link Telegram to web account
-- `GET /api/habits-by-telegram/{telegram_id}` — List habits
-- `POST /api/habits-by-telegram-create/{telegram_id}` — Create habit
-- `DELETE /api/habits-by-telegram-delete/{telegram_id}/{habit_id}` — Delete habit
-- `POST /api/complete-by-telegram/{telegram_id}/{habit_id}` — Complete habit
+Create the config file `/etc/nginx/sites-available/habit-tracker`:
 
-### Stats & Reports
-- `GET /api/stats/{telegram_id}` — Weekly stats for user
-- `GET /api/all-users-habits` — All users' habits (for bot reminders)
-- `GET /api/all-users-stats` — All users' stats (for AI accountability)
-- `GET /api/users-with-report-schedule` — Users with scheduled reports
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
 
-### User Settings
-- `PATCH /api/user-timezone/{telegram_id}` — Update timezone
-- `PATCH /api/user-report-schedule/{telegram_id}` — Set report schedule
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
 
-Full interactive docs: http://localhost:8000/docs
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+    }
+}
+```
 
----
+Enable and restart:
 
-## Contributing
+```bash
+sudo ln -s /etc/nginx/sites-available/habit-tracker /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl restart nginx
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Write tests for new functionality
-4. Ensure all tests pass: `pytest` (backend/bot), `pnpm test` (frontend)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+#### 8. (Optional) Configure Auto-Start
+
+```bash
+# Create a systemd service
+sudo tee /etc/systemd/system/habit-tracker.service > /dev/null <<EOF
+[Unit]
+Description=Habit Tracker Docker Compose
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/$USER/habit-tracker
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl enable --now habit-tracker
+```
+
+### Updating
+
+```bash
+cd ~/habit-tracker
+git pull
+docker compose up --build -d
+```
+
+### Stopping
+
+```bash
+cd ~/habit-tracker
+docker compose down
+```
+
+To remove all data (including the database):
+
+```bash
+docker compose down -v
+```
 
 ---
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-## Acknowledgments
-
-- [FastAPI](https://fastapi.tiangolo.com/) — Modern Python web framework
-- [aiogram](https://docs.aiogram.dev/) — Telegram Bot API framework
-- [OpenRouter](https://openrouter.ai/) — Unified AI API
-- [React](https://react.dev/) — UI library
-- [Vitest](https://vitest.dev/) — Blazing fast test framework
+MIT — see [LICENSE](LICENSE).
