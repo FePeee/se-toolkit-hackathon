@@ -6,9 +6,8 @@
 
 ## Demo
 
-> *[Screenshot 1: Dashboard — habit list, daily stats]*
->
-> *[Screenshot 2: Telegram bot — `/stats` command showing streaks and completion rate]*
+![scren_1](screenshots/my-screenshot.png)
+![scren_2](screenshots/my-screenshot.png)
 
 ---
 
